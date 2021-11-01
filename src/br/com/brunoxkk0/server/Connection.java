@@ -67,7 +67,9 @@ public class Connection extends Thread {
 
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                onQuit.onQuit(this);
+                this.interrupt();
+                break;
             }
         }
 

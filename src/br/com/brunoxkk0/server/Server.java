@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.logging.Logger;
 
 public class Server extends Thread {
@@ -49,11 +50,11 @@ public class Server extends Thread {
         logger.info("Server running on: " + getHost() + ":" + getPort());
 
         while (serverSocket.isBound() && !isInterrupted()){
+
             try {
 
                 Connection connection = new Connection(serverSocket.accept(), this::onRead, this::onJoin, this::onQuit);
                 connections.add(connection);
-
                 logger.info(connection.getSocket().getInetAddress() + " connected... (now we have " + connections.size() + " connections)");
 
                 connection.setDaemon(false);
@@ -65,46 +66,44 @@ public class Server extends Thread {
     }
 
     private void onJoin(Connection connection){
-        getConnections().forEach(con -> {
-            try {
-                BufferedWriter writer = con.getWriter();
-                writer.write(String.format("(%s entrou...)", connection.getUserName()) + "\n");
-                writer.flush();
-            } catch (IOException e) {
-                logger.warning(e.getMessage());
-            }
-        });
+        sendToAll(connection, String.format("(%s entrou...)", connection.getUserName()));
     }
 
     private void onQuit(Connection connection){
-        getConnections().forEach(con -> {
-            try {
-                BufferedWriter writer = con.getWriter();
-                writer.write(String.format("(%s saiu...)", connection.getUserName()) + "\n");
-                writer.flush();
-            } catch (IOException e) {
-                logger.warning(e.getMessage());
-            }
-        });
+        sendToAll(connection, String.format("(%s saiu...)", connection.getUserName()));
     }
 
     private void onRead(Connection connection, String message){
-
         logger.info(connection.getUserName() + " send a Message...");
+        sendToAll(connection, String.format("[%s] -> %s", connection.getUserName(), message));
+    }
 
-        getConnections().stream().filter(con -> !con.equals(connection)).forEach(con -> {
-            try {
-                BufferedWriter writer = con.getWriter();
-                writer.write(String.format("[%s] -> %s", connection.getUserName(), message) + "\r\n");
-                writer.flush();
-                System.out.println("message from " + connection.getUserName() + " send to " + con.getUserName());
-            } catch (IOException e) {
-                onQuit(con);
-                logger.warning(e.getMessage());
+    private void sendToAll(Connection connection, String message){
+
+        synchronized (connections){
+            Iterator<Connection> connectionIterator = connections.iterator();
+
+            while (connectionIterator.hasNext()){
+                Connection con = connectionIterator.next();
+
+                if(con.equals(connection))
+                    continue;
+
+                BufferedWriter bufferedWriter = con.getWriter();
+
+                if(bufferedWriter != null){
+                    try {
+                        bufferedWriter.write(message + "\r\n");
+                        bufferedWriter.flush();
+                        logger.info("message from " + connection.getUserName() + " send to " + con.getUserName());
+                    } catch (IOException e) {
+                        connectionIterator.remove();
+                        onQuit(con);
+                        logger.warning(e.getMessage());
+                    }
+                }
             }
-        });
-
-        getConnections().removeIf(con -> con.isInterrupted() || con.getSocket().isClosed() || !con.getSocket().isConnected());
+        }
 
     }
 
