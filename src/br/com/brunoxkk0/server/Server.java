@@ -66,7 +66,7 @@ public class Server extends Thread {
     }
 
     private void onJoin(Connection connection){
-        sendToAll(connection, String.format("(%s entrou...)", connection.getUserName()));
+        sendToAll(connection, String.format("(%s entrou...)", connection.getUserName()), true);
     }
 
     private void onQuit(Connection connection){
@@ -79,32 +79,32 @@ public class Server extends Thread {
     }
 
     private void sendToAll(Connection connection, String message){
+        sendToAll(connection, message, false);
+    }
 
-        synchronized (connections){
-            Iterator<Connection> connectionIterator = connections.iterator();
+    private void sendToAll(Connection connection, String message, boolean self){
+        Iterator<Connection> connectionIterator = connections.iterator();
 
-            while (connectionIterator.hasNext()){
-                Connection con = connectionIterator.next();
+        while (connectionIterator.hasNext()){
+            Connection con = connectionIterator.next();
 
-                if(con.equals(connection))
-                    continue;
+            if(con.equals(connection) && !self)
+                continue;
 
-                BufferedWriter bufferedWriter = con.getWriter();
+            BufferedWriter bufferedWriter = con.getWriter();
 
-                if(bufferedWriter != null){
-                    try {
-                        bufferedWriter.write(message + "\r\n");
-                        bufferedWriter.flush();
-                        logger.info("message from " + connection.getUserName() + " send to " + con.getUserName());
-                    } catch (IOException e) {
-                        connectionIterator.remove();
-                        onQuit(con);
-                        logger.warning(e.getMessage());
-                    }
+            if(bufferedWriter != null){
+                try {
+                    bufferedWriter.write(message + "\r\n");
+                    bufferedWriter.flush();
+                    logger.info("message from " + connection.getUserName() + " send to " + con.getUserName());
+                } catch (IOException e) {
+                    connectionIterator.remove();
+                    onQuit(con);
+                    logger.warning(e.getMessage());
                 }
             }
         }
-
     }
 
     public static void main(String[] args) throws IOException {
