@@ -1,8 +1,17 @@
 package br.com.brunoxkk0.client;
 
-import java.io.*;
+import br.com.brunoxkk0.common.KeyShareStatus;
+import br.com.brunoxkk0.common.SecurityUtils;
+
+import javax.crypto.SecretKey;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyPair;
+import java.util.Arrays;
 
 public class Client extends Thread{
 
@@ -15,13 +24,21 @@ public class Client extends Thread{
 
     private final BufferedReader input;
 
-    public Client(BufferedReader input, String userName, String host, int ip) throws IOException {
+    private final KeyPair keyPair;
+
+    private SecretKey AESKey;
+
+    public Client(BufferedReader input, String userName, String host, int ip) throws Exception {
+
         this.userName = userName;
         this.socket = new Socket(host, ip);
         this.input = input;
 
         this.reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
         this.writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8));
+
+        this.keyPair = SecurityUtils.genKeyPair();
+
     }
 
 
@@ -36,39 +53,73 @@ public class Client extends Thread{
     @Override
     public void run() {
 
+        KeyShareStatus keyShareStatus = KeyShareStatus.SEND_CLIENT_RSA;
+
         try {
 
-            if(!isIntroduced){
-                writer.write(getUserName() + "\r\n");
-                writer.flush();
-                isIntroduced = true;
-            }
-
             while (socket.isConnected() && !socket.isInputShutdown()){
+
+                if(!isIntroduced && keyShareStatus == KeyShareStatus.FINISH){
+                    writer.write(encode(getUserName()) + "\r\n");
+                    writer.flush();
+                    isIntroduced = true;
+                    continue;
+                }
+
+                if(keyShareStatus == KeyShareStatus.SEND_CLIENT_RSA){
+
+                    writer.write(SecurityUtils.asBase64ToString(keyPair.getPublic().getEncoded()) + "\r\n");
+                    writer.flush();
+
+                    keyShareStatus = KeyShareStatus.RECEIVE_SERVER_AES;
+                    continue;
+                }
+
+
                 String message;
 
                 if(reader.ready()){
-                    System.out.println(reader.readLine());
+
+                    String socket_message = reader.readLine();
+
+                    if(keyShareStatus == KeyShareStatus.RECEIVE_SERVER_AES){
+
+                        byte[] encrypted = SecurityUtils.fromBase64(socket_message.getBytes());
+
+                        encrypted = SecurityUtils.decrypt(keyPair.getPrivate(), encrypted);
+
+                        AESKey = SecurityUtils.aesKeyFromBase64(SecurityUtils.asBase64ToString(encrypted));
+
+                        keyShareStatus = KeyShareStatus.FINISH;
+                        continue;
+                    }
+
+                    System.out.println(SecurityUtils.decryptAES(AESKey, socket_message.getBytes()));
+
                 }
 
                 if(input.ready()){
                     message = input.readLine();
 
                     if(message != null){
-                        writer.write(message + "\r\n");
+                        writer.write(encode(message) + "\r\n");
                         writer.flush();
                     }
                 }
 
             }
 
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
     }
 
-    public static void main(String[] args) throws IOException {
+    public String encode(String message) throws Exception {
+        return SecurityUtils.encryptAES(AESKey, message.getBytes(StandardCharsets.UTF_8));
+    }
+
+    public static void main(String[] args) throws Exception {
 
         BufferedReader systemInput = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
 
@@ -86,14 +137,12 @@ public class Client extends Thread{
             throw new IllegalArgumentException("Port cannot be null");
         }
 
-
         System.out.println("Digite seu nome de usuário: (Obs: caso fique em branco sera usado anon)");
         String userName = systemInput.readLine();
 
         if(userName == null || userName.isEmpty()){
             userName = "Anon - " + System.currentTimeMillis();
         }
-
 
         Client client = new Client(systemInput, userName, host, Integer.parseInt(port));
         client.setDaemon(false);

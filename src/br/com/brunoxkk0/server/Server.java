@@ -1,7 +1,6 @@
 package br.com.brunoxkk0.server;
 
 import java.io.BufferedWriter;
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.util.ArrayList;
@@ -17,6 +16,7 @@ public class Server extends Thread {
 
     private final ServerSocket serverSocket;
     private final ArrayList<Connection> connections = new ArrayList<>();
+
 
     public Logger getLogger() {
         return logger;
@@ -38,10 +38,12 @@ public class Server extends Thread {
         return connections;
     }
 
-    public Server(int port, String host) throws IOException {
+    public Server(int port, String host) throws Exception {
+
         this.port = port;
         this.host = (host != null) ? host : "127.0.0.1";
         this.serverSocket = new ServerSocket(port, 50, InetAddress.getByName(host));
+
     }
 
     @Override
@@ -59,7 +61,7 @@ public class Server extends Thread {
 
                 connection.setDaemon(false);
                 connection.start();
-            } catch (IOException e) {
+            } catch (Exception e) {
                 logger.warning(e.getMessage());
             }
         }
@@ -95,10 +97,10 @@ public class Server extends Thread {
 
             if(bufferedWriter != null){
                 try {
-                    bufferedWriter.write(message + "\r\n");
+                    bufferedWriter.write(con.encode(message) + "\r\n");
                     bufferedWriter.flush();
                     logger.info("message from " + connection.getUserName() + " send to " + con.getUserName());
-                } catch (IOException e) {
+                } catch (Exception e) {
                     connectionIterator.remove();
                     onQuit(con);
                     logger.warning(e.getMessage());
@@ -107,7 +109,7 @@ public class Server extends Thread {
         }
     }
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws Exception {
 
         Server server = new Server(1234, "127.0.0.1");
         server.setDaemon(false);
