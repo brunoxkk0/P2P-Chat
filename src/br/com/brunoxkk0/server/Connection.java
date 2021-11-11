@@ -13,20 +13,64 @@ import java.security.PublicKey;
 
 public class Connection extends Thread {
 
+    /**
+     * Socket da conexão.
+     */
     private final Socket socket;
+
+    /**
+     * Buffer de leitura do cliente para o servidor.
+     */
     private final BufferedReader reader;
+
+    /**
+     * Buffer de escrita do servidor para o cliente.
+     */
     private final BufferedWriter writer;
 
+    /**
+     * Interface funcional com a função a ser executada ao realizar uma leitura.
+     */
     private final OnRead onRead;
+
+    /**
+     * Interface funcional com a função a ser executada ao quando um cliente se conecta.
+     */
     private final OnJoin onJoin;
+
+    /**
+     * Interface funcional com a função a ser executada ao quando um cliente se desconecta.
+     */
     private final OnQuit onQuit;
 
+    /**
+     * Nome do cliente.
+     */
     private String userName;
 
+    /**
+     * Chave AES do servidor.
+     */
     private final SecretKey AESKey;
 
+    /**
+     * Chave pública do cliente.
+     */
     private PublicKey clientPublicKey;
 
+    /**
+     * Cliente "server-side" usado para lidar com a conexão do socket do lado do servidor,
+     * como implementado no {@link br.com.brunoxkk0.client.Client}, ao criar a conexão
+     * inicializa o {@link #reader} e {@link #writer} utilizando o
+     * charset {@link StandardCharsets#UTF_8}, também, gera a chave AES a ser usada.
+     *
+     * @param socket socket conectado.
+     * @param onRead interface funcional a ser chamada quando realizado uma leitura.
+     * @param onJoin interface funcional a ser chamado quando um cliente se conecta.
+     * @param onQuit interface funcional a ser chamada quando um cliente se desconecta.
+     *
+     * @throws Exception caso ocorra algum erro ao criar o objeto de conexão.
+     */
     public Connection(Socket socket, OnRead onRead, OnJoin onJoin, OnQuit onQuit) throws Exception {
 
         this.socket = socket;
@@ -40,14 +84,29 @@ public class Connection extends Thread {
         this.AESKey = SecurityUtils.genAESKey();
     }
 
-    public Socket getSocket() {
-        return socket;
-    }
-
+    /**
+     * Retorna o nome do cliente.
+     *
+     * @return nome do cliente
+     */
     public String getUserName() {
         return userName;
     }
 
+    /**
+     * Retorna o socket do cliente.
+     *
+     * @return socket do cliente
+     */
+    public Socket getSocket() {
+        return socket;
+    }
+
+    /**
+     * Retorna o buffer de escrita do socket conectado.
+     *
+     * @return buffer de escrita.
+     */
     public BufferedWriter getWriter() {
         return writer;
     }
@@ -107,7 +166,16 @@ public class Connection extends Thread {
         onQuit.onQuit(this);
     }
 
-    public String encode(String message) throws Exception {
+    /**
+     * Criptografa a mensagem informada utilizando a chave AES, e codifica em Base64.
+     *
+     * @param message a ser criptografada
+     *
+     * @return mensagem criptografada e codificada em Base64
+     *
+     * @throws Exception caso ocorra algum problema ao executar a função.
+     */
+    public String encrypt(String message) throws Exception {
         return SecurityUtils.encryptAES(AESKey, message.getBytes(StandardCharsets.UTF_8));
     }
 

@@ -11,27 +11,67 @@ import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
-import java.util.Arrays;
+
 
 public class Client extends Thread{
 
+    /**
+     * Nome do cliente.
+     */
     private final String userName;
+
+    /**
+     * Socket da conexão.
+     */
     private final Socket socket;
+
+    /**
+     * Buffer de leitura do servidor para o cliente.
+     */
     private final BufferedReader reader;
+
+    /**
+     * Buffer de escrita do cliente para o servidor.
+     */
     private final BufferedWriter writer;
 
+    /**
+     * Controla se o cliente ja foi apresentado, um cliente é considerado apresentado,
+     * se, o seu nome ja foi enviado ao servidor.
+     */
     private boolean isIntroduced;
 
+    /**
+     * Buffer de entrada do sistema.
+     */
     private final BufferedReader input;
 
+    /**
+     * Par de chaves RSA.
+     */
     private final KeyPair keyPair;
 
+    /**
+     * Chave AES.
+     */
     private SecretKey AESKey;
 
-    public Client(BufferedReader input, String userName, String host, int ip) throws Exception {
+    /**
+     * Cliente usado para se comunicar ao servidor através dos parâmetros informados,
+     * quando criado, inicializa o {@link #reader} e {@link #writer} utilizando o
+     * charset {@link StandardCharsets#UTF_8}, também, gera um par de chaves RSA.
+     *
+     * @param input entrada de dados do sistema.
+     * @param userName nome do cliente.
+     * @param host endereço do servidor.
+     * @param port porta do servidor.
+     *
+     * @throws Exception caso algum erro ocorra na criação.
+     */
+    public Client(BufferedReader input, String userName, String host, int port) throws Exception {
 
         this.userName = userName;
-        this.socket = new Socket(host, ip);
+        this.socket = new Socket(host, port);
         this.input = input;
 
         this.reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
@@ -41,14 +81,24 @@ public class Client extends Thread{
 
     }
 
-
+    /**
+     * Retorna o nome do cliente.
+     *
+     * @return nome do cliente
+     */
     public String getUserName() {
         return userName;
     }
 
+    /**
+     * Retorna o socket do cliente.
+     *
+     * @return socket do cliente
+     */
     public Socket getSocket() {
         return socket;
     }
+
 
     @Override
     public void run() {
@@ -60,7 +110,7 @@ public class Client extends Thread{
             while (socket.isConnected() && !socket.isInputShutdown()){
 
                 if(!isIntroduced && keyShareStatus == KeyShareStatus.FINISH){
-                    writer.write(encode(getUserName()) + "\r\n");
+                    writer.write(encrypt(getUserName()) + "\r\n");
                     writer.flush();
                     isIntroduced = true;
                     continue;
@@ -102,7 +152,7 @@ public class Client extends Thread{
                     message = input.readLine();
 
                     if(message != null){
-                        writer.write(encode(message) + "\r\n");
+                        writer.write(encrypt(message) + "\r\n");
                         writer.flush();
                     }
                 }
@@ -115,9 +165,19 @@ public class Client extends Thread{
 
     }
 
-    public String encode(String message) throws Exception {
+    /**
+     * Criptografa a mensagem informada utilizando a chave AES, e codifica em Base64.
+     *
+     * @param message a ser criptografada
+     *
+     * @return mensagem criptografada e codificada em Base64
+     *
+     * @throws Exception caso ocorra algum problema ao executar a função.
+     */
+    public String encrypt(String message) throws Exception {
         return SecurityUtils.encryptAES(AESKey, message.getBytes(StandardCharsets.UTF_8));
     }
+
 
     public static void main(String[] args) throws Exception {
 
