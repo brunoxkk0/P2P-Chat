@@ -47,11 +47,6 @@ public class Client extends Thread{
     private final BufferedReader input;
 
     /**
-     * Par de chaves RSA.
-     */
-    private final KeyPair keyPair;
-
-    /**
      * Chave AES.
      */
     private SecretKey AESKey;
@@ -77,8 +72,6 @@ public class Client extends Thread{
         this.reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
         this.writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8));
 
-        this.keyPair = SecurityUtils.genKeyPair();
-
     }
 
     /**
@@ -103,7 +96,7 @@ public class Client extends Thread{
     @Override
     public void run() {
 
-        KeyShareStatus keyShareStatus = KeyShareStatus.SEND_CLIENT_RSA;
+        KeyShareStatus keyShareStatus = KeyShareStatus.RECEIVE_SERVER_AES;
 
         try {
 
@@ -113,15 +106,6 @@ public class Client extends Thread{
                     writer.write(encrypt(getUserName()) + "\r\n");
                     writer.flush();
                     isIntroduced = true;
-                    continue;
-                }
-
-                if(keyShareStatus == KeyShareStatus.SEND_CLIENT_RSA){
-
-                    writer.write(SecurityUtils.asBase64ToString(keyPair.getPublic().getEncoded()) + "\r\n");
-                    writer.flush();
-
-                    keyShareStatus = KeyShareStatus.RECEIVE_SERVER_AES;
                     continue;
                 }
 
@@ -135,8 +119,6 @@ public class Client extends Thread{
                     if(keyShareStatus == KeyShareStatus.RECEIVE_SERVER_AES){
 
                         byte[] encrypted = SecurityUtils.fromBase64(socket_message.getBytes());
-
-                        encrypted = SecurityUtils.decrypt(keyPair.getPrivate(), encrypted);
 
                         AESKey = SecurityUtils.aesKeyFromBase64(SecurityUtils.asBase64ToString(encrypted));
 

@@ -54,11 +54,6 @@ public class Connection extends Thread {
     private final SecretKey AESKey;
 
     /**
-     * Chave pública do cliente.
-     */
-    private PublicKey clientPublicKey;
-
-    /**
      * Cliente "server-side" usado para lidar com a conexão do socket do lado do servidor,
      * como implementado no {@link br.com.brunoxkk0.client.Client}, ao criar a conexão
      * inicializa o {@link #reader} e {@link #writer} utilizando o
@@ -114,7 +109,7 @@ public class Connection extends Thread {
     @Override
     public void run() {
 
-        KeyShareStatus keyShareStatus = KeyShareStatus.RECEIVE_CLIENT_RSA;
+        KeyShareStatus keyShareStatus = KeyShareStatus.SEND_SERVER_AES;
 
         while(isAlive() && getSocket().isConnected() && !getSocket().isClosed()){
 
@@ -122,7 +117,7 @@ public class Connection extends Thread {
 
                 if(keyShareStatus == KeyShareStatus.SEND_SERVER_AES){
 
-                    byte[] encrypted = SecurityUtils.encrypt(clientPublicKey, AESKey.getEncoded());
+                    byte[] encrypted = AESKey.getEncoded();
 
                     writer.write(SecurityUtils.asBase64ToString(encrypted) + "\r\n");
                     writer.flush();
@@ -136,14 +131,6 @@ public class Connection extends Thread {
                     String message = reader.readLine();
 
                     if(message != null){
-
-                        if(keyShareStatus == KeyShareStatus.RECEIVE_CLIENT_RSA){
-
-                            clientPublicKey = SecurityUtils.publicKeyFromString(SecurityUtils.fromBase64(message));
-
-                            keyShareStatus = KeyShareStatus.SEND_SERVER_AES;
-                            continue;
-                        }
 
                         message = SecurityUtils.decryptAES(AESKey, message.getBytes(StandardCharsets.UTF_8));
 
