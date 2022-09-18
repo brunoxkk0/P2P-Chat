@@ -1,4 +1,4 @@
-package br.com.brunoxkk0.common;
+package br.dev.brunoxkk0.p2p.common;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;

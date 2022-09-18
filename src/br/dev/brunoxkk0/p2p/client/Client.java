@@ -1,7 +1,7 @@
-package br.com.brunoxkk0.client;
+package br.dev.brunoxkk0.p2p.client;
 
-import br.com.brunoxkk0.common.KeyShareStatus;
-import br.com.brunoxkk0.common.SecurityUtils;
+import br.dev.brunoxkk0.p2p.common.KeyShareStatus;
+import br.dev.brunoxkk0.p2p.common.SecurityUtils;
 
 import javax.crypto.SecretKey;
 import java.io.BufferedReader;

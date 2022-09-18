@@ -1,1 +1,1 @@
-java -cp src br.com.brunoxkk0.client.Client
+java -cp src client.br.dev.brunoxkk0.p2p.Client

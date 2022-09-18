@@ -1,6 +1,6 @@
-package br.com.brunoxkk0.common;
+package br.dev.brunoxkk0.p2p.common;
 
-import br.com.brunoxkk0.server.Connection;
+import br.dev.brunoxkk0.p2p.server.Connection;
 
 @FunctionalInterface
 public interface OnJoin {

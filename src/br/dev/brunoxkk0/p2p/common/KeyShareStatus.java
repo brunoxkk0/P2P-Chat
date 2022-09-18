@@ -1,4 +1,4 @@
-package br.com.brunoxkk0.common;
+package br.dev.brunoxkk0.p2p.common;
 
 /**
  * Define os estados para realizar a troca das chaves.

@@ -1,6 +1,9 @@
-package br.com.brunoxkk0.server;
+package br.dev.brunoxkk0.p2p.server;
 
 import br.com.brunoxkk0.common.*;
+import br.dev.brunoxkk0.p2p.client.Client;
+import br.dev.brunoxkk0.common.*;
+import br.dev.brunoxkk0.p2p.common.*;
 
 import javax.crypto.SecretKey;
 import java.io.BufferedReader;
@@ -60,7 +63,7 @@ public class Connection extends Thread {
 
     /**
      * Cliente "server-side" usado para lidar com a conexão do socket do lado do servidor,
-     * como implementado no {@link br.com.brunoxkk0.client.Client}, ao criar a conexão
+     * como implementado no {@link Client}, ao criar a conexão
      * inicializa o {@link #reader} e {@link #writer} utilizando o
      * charset {@link StandardCharsets#UTF_8}, também, gera a chave AES a ser usada.
      *

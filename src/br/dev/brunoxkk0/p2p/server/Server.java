@@ -1,4 +1,4 @@
-package br.com.brunoxkk0.server;
+package br.dev.brunoxkk0.p2p.server;
 
 import java.io.BufferedWriter;
 import java.net.InetAddress;
